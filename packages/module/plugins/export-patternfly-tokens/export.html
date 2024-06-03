@@ -104,7 +104,8 @@
   </link-spacer>  
 </main>
 <script>
-  window.onmessage = ({ data: { pluginMessage } }) => {
+  window.onmessage = async ({ data: { pluginMessage } }) => {
+    window.zip2 = await fetch('https://unpkg.com/@zip.js/zip.js/index.js');
     if (pluginMessage.type === "EXPORT_RESULT") {
       let saveFileName = "";
       let textOutput = pluginMessage.files.map( ({ fileName, body }) => 
@@ -118,6 +119,8 @@
         
         saveVars(textOutput, saveFileName);
     }
+
+    const filesToZip = [];
 
     function saveVars(text, fileName) {
       var splitFiles = text.split('\n\n\n');
@@ -168,6 +171,7 @@
         var textToSaveAsBlob = new Blob([fileToExport], {type:"text/plain"});
     
         createLink(textToSaveAsBlob, saveFileName);
+        filesToZip.push({saveFileName: textToSaveAsBlob});
       }
     }
 
@@ -179,6 +183,16 @@
       downloadLink.innerHTML = file;
       downloadLink.href = textToSaveAsURL;
       document.body.appendChild(downloadLink);
+    }
+
+    async function getZipFileBlob() {
+      const zipWriter = new zip.Writer(new BlobWriter("application/zip"));
+      await Promise.all([
+        filesToZip.map((file) => {
+          zipWriter.add(file.saveFileName, new TextReader(file.saveFileName));
+        })
+      ]);
+      return zipWriter;
     }
   };
 
