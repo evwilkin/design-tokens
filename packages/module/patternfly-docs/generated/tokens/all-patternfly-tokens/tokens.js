@@ -1,6 +1,7 @@
 import React from 'react';
 import { AutoLinkHeader, Example, Link as PatternflyThemeLink } from '@patternfly/documentation-framework/components';
 import { TokensTable } from '../../../content/./tokensTable.js';
+import { TokensTable2 } from '../../../content/./tokensTable2.js';
 const pageData = {
   "id": "All PatternFly tokens",
   "section": "tokens",
@@ -16,16 +17,17 @@ const pageData = {
   "relPath": "packages/module/patternfly-docs/content/all-patternfly-tokens.md"
 };
 pageData.liveContext = {
-  TokensTable
+  TokensTable,
+  TokensTable2
 };
-pageData.relativeImports = "import { TokensTable } from 'content/./tokensTable.js';"
+pageData.relativeImports = "import { TokensTable } from 'content/./tokensTable.js';,import { TokensTable2 } from 'content/./tokensTable2.js';"
 pageData.examples = {
   
 };
 
 const Component = () => (
   <React.Fragment>
-    <TokensTable/>
+    <TokensTable2/>
   </React.Fragment>
 );
 Component.displayName = 'TokensAllPatternflyTokensTokensDocs';

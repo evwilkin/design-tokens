@@ -2,7 +2,7 @@
 const StyleDictionary = require('style-dictionary');
 
 const build = (selector) => {
-  const { fileHeader, formattedVariables } = StyleDictionary.formatHelpers;
+  const { fileHeader, formattedVariables, sortByName, sortByReference } = StyleDictionary.formatHelpers;
 
   console.log('Build started...');
   console.log('\n============================');
@@ -12,12 +12,55 @@ const build = (selector) => {
     name: 'customFormat',
     formatter: function ({ dictionary, file, options }) {
       const { outputReferences } = options;
+      const alphaSort = (a, b) => sortByName(a, b) * -1;
+      dictionary.allTokens = dictionary.allTokens.sort(alphaSort).sort((tokens) => sortByReference(tokens));
       return (
         fileHeader({ file, commentStyle: 'short' }) +
         `${selector} {\n` +
         formattedVariables({ format: 'css', dictionary, outputReferences }) +
         '\n}\n'
       );
+    }
+  });
+
+  StyleDictionary.registerFormat({
+    name: 'json/flat',
+    formatter: function (dictionary) {
+      let tokens = {};
+      dictionary.allTokens.map((token) => {
+        // assign each token object to token.name
+        tokens[token.name] = token;
+        if (dictionary.usesReference(token.original.value)) {
+          token.references = dictionary.getReferences(token.original.value);
+        }
+      });
+      return JSON.stringify(tokens, null, 2);
+      // let res = {};
+      // let { allTokens } = dictionary;
+      // allTokens = allTokens.sort(sortByReference(dictionary));
+      // map through allTokens, assigning each token object to token.name
+      // allTokens.map((token) => {
+      //   res[token.name] = token;
+      //   res[token.name].references = [];
+      //   console.log(res);
+      //   let curToken = structuredClone(token);
+
+      //   const getTokenChain = (token) => {
+      //     if (curToken.original?.value && dictionary.usesReference(curToken.original.value)) {
+      //       const refs = dictionary.getReferences(curToken.original.value);
+      //       refs.forEach((ref) => {
+      //         console.log(token.name);
+      //         res[token.name].references.push(ref.name);
+      //         curToken = structuredClone(ref);
+      //       });
+      //       return getTokenChain(curToken);
+      //     } else {
+      //       res[token.name].references.push(curToken.value);
+      //     }
+      //   };
+      //   getTokenChain(token);
+      // });
+      // return JSON.stringify(res, null, 2);
     }
   });
 
@@ -38,9 +81,7 @@ const build = (selector) => {
   StyleDictionary.registerTransform({
     name: 'patternfly/global/ms',
     type: 'value',
-    matcher: (token) =>
-      token.attributes.type === 'duration' ||
-      token.attributes.type === 'delay',
+    matcher: (token) => token.attributes.type === 'duration' || token.attributes.type === 'delay',
     transformer: (token) => `${token.value}ms`
   });
 
@@ -74,6 +115,8 @@ const build = (selector) => {
   const paletteExtendedSD = StyleDictionary.extend(__dirname + '/config.palette-colors.json');
   const chartsExtendedSD = StyleDictionary.extend(__dirname + '/config.charts.json');
   const chartsDarkExtendedSD = StyleDictionary.extend(__dirname + '/config.charts.dark.json');
+  const allDefaultSD = StyleDictionary.extend(__dirname + '/config.all.default.json');
+  const allDarkSD = StyleDictionary.extend(__dirname + '/config.all.dark.json');
 
   // Build all
   defaultExtendedSD.buildAllPlatforms();
@@ -81,6 +124,8 @@ const build = (selector) => {
   paletteExtendedSD.buildAllPlatforms();
   chartsExtendedSD.buildAllPlatforms();
   chartsDarkExtendedSD.buildAllPlatforms();
+  allDefaultSD.buildAllPlatforms();
+  allDarkSD.buildAllPlatforms();
 
   console.log('\n============================');
   console.log('\nBuild completed.');

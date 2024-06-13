@@ -4,6 +4,7 @@ import * as JSZip from 'jszip';
 import './ui.css';
 
 let tokensZip;
+let allTokens;
 
 const addToZip = (blob, fileName, folderNames, zip) => {
   // Add download files to folder structure
@@ -12,9 +13,10 @@ const addToZip = (blob, fileName, folderNames, zip) => {
   });
 };
 
-const saveVars = (text, setJsonFiles, setZipFile) => {
+const saveVars = (text, setJsonFiles, setZipFile, setAllTokensFile) => {
   let splitFiles = text.split('\n\n\n');
   tokensZip = new JSZip();
+  allTokens = {};
 
   for (let i = 0; i < splitFiles.length; i++) {
     const splitFileName = splitFiles[i].split('\n', 1)[0];
@@ -79,8 +81,16 @@ const saveVars = (text, setJsonFiles, setZipFile) => {
     setJsonFiles((prev: React.ReactNode[]) => [...prev, jsonLink]);
     // add each file zip
     addToZip(textToSaveAsBlob, saveFileName, saveFolderNames, tokensZip);
+    // add each tokens set to allTokens
+    allTokens[saveFileName] = JSON.parse(fileToExport);
   }
 
+  // create download link for allTokens.json
+  const allTokensBlob = new Blob([JSON.stringify(allTokens, null, 2)], { type: 'text/plain' });
+  const allTokensLink = createLink(allTokensBlob, 'allTokens.json');
+  setAllTokensFile(allTokensLink);
+  // add allTokens to zip file
+  tokensZip.file('allTokens.json', allTokensBlob);
   // create download link for finished zip file
   tokensZip.generateAsync({ type: 'blob' }).then((blob) => {
     const zipLink = createLink(blob, 'tokens.zip');
@@ -102,6 +112,7 @@ const exportTokens = () => parent.postMessage({ pluginMessage: { type: 'EXPORT' 
 const App = () => {
   const [jsonFiles, setJsonFiles] = React.useState([]);
   const [zipFile, setZipFile] = React.useState(null);
+  const [allTokensFile, setAllTokensFile] = React.useState(null);
   const resetDownloads = () => {
     setJsonFiles([]);
     setZipFile(null);
@@ -122,7 +133,7 @@ const App = () => {
         document.querySelector('textarea').innerHTML = textOutput;
 
         // Create downloadable token files
-        saveVars(textOutput, setJsonFiles, setZipFile);
+        saveVars(textOutput, setJsonFiles, setZipFile, setAllTokensFile);
       }
     };
   }, []);
@@ -142,6 +153,10 @@ const App = () => {
       <div className="tokens-download-wrapper json-wrapper">
         <p>Download individual JSON files:</p>
         <div className="json-downloads">{jsonFiles}</div>
+      </div>
+      <div className="tokens-download-wrapper all-tokens-wrapper">
+        <p>Download all tokens:</p>
+        <div className="all-tokens-downloads">{allTokensFile}</div>
       </div>
     </main>
   );
